@@ -67,11 +67,39 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path "dist" -Force | Out-Null
-          & "$env:AHK_COMPILER" /in ".\haloCaps.ahk" /out ".\dist\haloCaps.exe" /base "$env:AHK_BASE_EXE"
+          $inFile = (Resolve-Path ".\haloCaps.ahk").Path
+          $outFile = (Join-Path (Get-Location) "dist\haloCaps.exe")
+          $baseFile = $env:AHK_BASE_EXE
+
+          Write-Host "Compile input: $inFile"
+          Write-Host "Compile output: $outFile"
+          Write-Host "Compile base: $baseFile"
+
+          $args = @("/in", $inFile, "/out", $outFile, "/base", $baseFile)
+          $proc = Start-Process -FilePath "$env:AHK_COMPILER" -ArgumentList $args -Wait -PassThru
+          Write-Host "Ahk2Exe exit code: $($proc.ExitCode)"
+
+          if (-not (Test-Path $outFile)) {
+            Write-Host "Expected output not found in dist. Searching workspace for haloCaps.exe..."
+            $foundExe = Get-ChildItem -Path "." -Recurse -Filter "haloCaps.exe" | Select-Object -First 1
+            if ($foundExe) {
+              Write-Host "Found fallback exe: $($foundExe.FullName)"
+              Copy-Item $foundExe.FullName $outFile -Force
+            }
+          }
+
+          if (-not (Test-Path $outFile)) {
+            Write-Host "Workspace file list for debugging:"
+            Get-ChildItem -Path "." -Recurse | Select-Object -ExpandProperty FullName
+            throw "Compile failed: haloCaps.exe was not produced."
+          }
 
       - name: Pack release assets
         shell: pwsh
         run: |
+          if (-not (Test-Path ".\dist\haloCaps.exe")) {
+            throw "Pack aborted: .\\dist\\haloCaps.exe does not exist."
+          }
           Copy-Item ".\conf.ini" ".\dist\conf.ini" -Force
           Compress-Archive -Path ".\dist\*" -DestinationPath ".\haloCaps-master-${{ github.run_number }}.zip" -Force
 
