@@ -18,30 +18,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download AutoHotkey v2 portable package
+      - name: Download AutoHotkey runtime and Ahk2Exe compiler
         shell: pwsh
         run: |
           $headers = @{
             Accept = "application/vnd.github+json"
             "User-Agent" = "haloCaps-release-workflow"
           }
-          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest" -Headers $headers
-          $zipAsset = $release.assets | Where-Object { $_.name -match '^AutoHotkey_.*\.zip$' } | Select-Object -First 1
-          if (-not $zipAsset) {
-            throw "No AutoHotkey binary zip asset found in latest release."
+          $ahkRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest" -Headers $headers
+          $ahkZip = $ahkRelease.assets | Where-Object { $_.name -match '^AutoHotkey_.*\.zip$' } | Select-Object -First 1
+          if (-not $ahkZip) {
+            throw "No AutoHotkey runtime zip asset found."
           }
-          Write-Host "Downloading asset: $($zipAsset.name)"
-          Invoke-WebRequest -Uri $zipAsset.browser_download_url -OutFile "ahk-v2.zip" -Headers @{ "User-Agent" = "haloCaps-release-workflow" }
-          Expand-Archive -Path "ahk-v2.zip" -DestinationPath "ahk-v2" -Force
+          Write-Host "Downloading AHK runtime asset: $($ahkZip.name)"
+          Invoke-WebRequest -Uri $ahkZip.browser_download_url -OutFile "ahk-runtime.zip" -Headers @{ "User-Agent" = "haloCaps-release-workflow" }
+          Expand-Archive -Path "ahk-runtime.zip" -DestinationPath "ahk-runtime" -Force
 
-          $compiler = Get-ChildItem -Path ".\ahk-v2" -Recurse -Filter "Ahk2Exe.exe" | Select-Object -First 1
-          $baseExe = Get-ChildItem -Path ".\ahk-v2" -Recurse -Filter "AutoHotkey64.exe" | Select-Object -First 1
+          $ahk2exeRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/AutoHotkey/Ahk2Exe/releases/latest" -Headers $headers
+          $ahk2exeZip = $ahk2exeRelease.assets | Where-Object { $_.name -match '\.zip$' } | Select-Object -First 1
+          if (-not $ahk2exeZip) {
+            throw "No Ahk2Exe zip asset found."
+          }
+          Write-Host "Downloading Ahk2Exe asset: $($ahk2exeZip.name)"
+          Invoke-WebRequest -Uri $ahk2exeZip.browser_download_url -OutFile "ahk2exe.zip" -Headers @{ "User-Agent" = "haloCaps-release-workflow" }
+          Expand-Archive -Path "ahk2exe.zip" -DestinationPath "ahk2exe" -Force
+
+          Write-Host "Runtime executables:"
+          Get-ChildItem -Path ".\ahk-runtime" -Recurse -Filter "AutoHotkey*.exe" | ForEach-Object { Write-Host $_.FullName }
+          Write-Host "Compiler executables:"
+          Get-ChildItem -Path ".\ahk2exe" -Recurse -Filter "*.exe" | ForEach-Object { Write-Host $_.FullName }
+
+          $compiler = Get-ChildItem -Path ".\ahk2exe" -Recurse -Filter "Ahk2Exe.exe" | Select-Object -First 1
+          $baseExe = Get-ChildItem -Path ".\ahk-runtime" -Recurse -Filter "AutoHotkey64.exe" | Select-Object -First 1
 
           if (-not $compiler) {
-            throw "Ahk2Exe.exe not found in extracted AutoHotkey package."
+            throw "Ahk2Exe.exe not found in extracted Ahk2Exe package."
           }
           if (-not $baseExe) {
-            throw "AutoHotkey64.exe not found in extracted AutoHotkey package."
+            throw "AutoHotkey64.exe not found in extracted AutoHotkey runtime package."
           }
 
           Write-Host "Compiler: $($compiler.FullName)"
