@@ -17,17 +17,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download AutoHotkey v2
+      - name: Download AutoHotkey v2 (from GitHub Releases)
         shell: pwsh
         run: |
-          Invoke-WebRequest -Uri "https://www.autohotkey.com/download/ahk-v2.zip" -OutFile "ahk-v2.zip"
+          $headers = @{
+            Accept = "application/vnd.github+json"
+            "User-Agent" = "haloCaps-release-workflow"
+          }
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest" -Headers $headers
+          $zipAsset = $release.assets | Where-Object { $_.name -match '\.zip$' } | Select-Object -First 1
+          if (-not $zipAsset) {
+            throw "No zip asset found in AutoHotkey latest release."
+          }
+          Invoke-WebRequest -Uri $zipAsset.browser_download_url -OutFile "ahk-v2.zip" -Headers @{ "User-Agent" = "haloCaps-release-workflow" }
           Expand-Archive -Path "ahk-v2.zip" -DestinationPath "ahk-v2" -Force
 
       - name: Compile haloCaps.exe
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path "dist" -Force | Out-Null
-          & ".\ahk-v2\Compiler\Ahk2Exe.exe" /in ".\haloCaps.ahk" /out ".\dist\haloCaps.exe" /base ".\ahk-v2\AutoHotkey64.exe"
+          $ahkCompiler = Get-ChildItem -Path ".\ahk-v2" -Recurse -Filter "Ahk2Exe.exe" | Select-Object -First 1
+          $ahkBase = Get-ChildItem -Path ".\ahk-v2" -Recurse -Filter "AutoHotkey64.exe" | Select-Object -First 1
+          if (-not $ahkCompiler) {
+            throw "Ahk2Exe.exe not found in extracted package."
+          }
+          if (-not $ahkBase) {
+            throw "AutoHotkey64.exe not found in extracted package."
+          }
+          & $ahkCompiler.FullName /in ".\haloCaps.ahk" /out ".\dist\haloCaps.exe" /base $ahkBase.FullName
 
       - name: Pack release assets
         shell: pwsh
