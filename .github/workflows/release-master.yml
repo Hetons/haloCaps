@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download AutoHotkey v2 (from GitHub Releases)
+      - name: Install AutoHotkey v2 (from GitHub Releases)
         shell: pwsh
         run: |
           $headers = @{
@@ -25,26 +25,40 @@ jobs:
             "User-Agent" = "haloCaps-release-workflow"
           }
           $release = Invoke-RestMethod -Uri "https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest" -Headers $headers
-          $zipAsset = $release.assets | Where-Object { $_.name -match '\.zip$' } | Select-Object -First 1
-          if (-not $zipAsset) {
-            throw "No zip asset found in AutoHotkey latest release."
+          $setupAsset = $release.assets | Where-Object { $_.name -match 'AutoHotkey.*setup\.exe$' } | Select-Object -First 1
+          if (-not $setupAsset) {
+            throw "No setup exe asset found in AutoHotkey latest release."
           }
-          Invoke-WebRequest -Uri $zipAsset.browser_download_url -OutFile "ahk-v2.zip" -Headers @{ "User-Agent" = "haloCaps-release-workflow" }
-          Expand-Archive -Path "ahk-v2.zip" -DestinationPath "ahk-v2" -Force
+          Invoke-WebRequest -Uri $setupAsset.browser_download_url -OutFile "ahk-setup.exe" -Headers @{ "User-Agent" = "haloCaps-release-workflow" }
+          Start-Process -FilePath ".\ahk-setup.exe" -ArgumentList "/S" -Wait
+
+          $compilerCandidates = @(
+            "$env:ProgramFiles\AutoHotkey\Compiler\Ahk2Exe.exe",
+            "${env:ProgramFiles(x86)}\AutoHotkey\Compiler\Ahk2Exe.exe"
+          )
+          $baseCandidates = @(
+            "$env:ProgramFiles\AutoHotkey\AutoHotkey64.exe",
+            "${env:ProgramFiles(x86)}\AutoHotkey\AutoHotkey64.exe"
+          )
+
+          $compiler = $compilerCandidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+          $baseExe = $baseCandidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+
+          if (-not $compiler) {
+            throw "Ahk2Exe.exe not found after AutoHotkey installation."
+          }
+          if (-not $baseExe) {
+            throw "AutoHotkey64.exe not found after AutoHotkey installation."
+          }
+
+          "AHK_COMPILER=$compiler" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "AHK_BASE_EXE=$baseExe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Compile haloCaps.exe
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path "dist" -Force | Out-Null
-          $ahkCompiler = Get-ChildItem -Path ".\ahk-v2" -Recurse -Filter "Ahk2Exe.exe" | Select-Object -First 1
-          $ahkBase = Get-ChildItem -Path ".\ahk-v2" -Recurse -Filter "AutoHotkey64.exe" | Select-Object -First 1
-          if (-not $ahkCompiler) {
-            throw "Ahk2Exe.exe not found in extracted package."
-          }
-          if (-not $ahkBase) {
-            throw "AutoHotkey64.exe not found in extracted package."
-          }
-          & $ahkCompiler.FullName /in ".\haloCaps.ahk" /out ".\dist\haloCaps.exe" /base $ahkBase.FullName
+          & "$env:AHK_COMPILER" /in ".\haloCaps.ahk" /out ".\dist\haloCaps.exe" /base "$env:AHK_BASE_EXE"
 
       - name: Pack release assets
         shell: pwsh
