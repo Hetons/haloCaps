@@ -1,0 +1,48 @@
+name: Build And Release (master)
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://www.autohotkey.com/download/ahk-v2.zip" -OutFile "ahk-v2.zip"
+          Expand-Archive -Path "ahk-v2.zip" -DestinationPath "ahk-v2" -Force
+
+      - name: Compile haloCaps.exe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "dist" -Force | Out-Null
+          & ".\ahk-v2\Compiler\Ahk2Exe.exe" /in ".\haloCaps.ahk" /out ".\dist\haloCaps.exe" /base ".\ahk-v2\AutoHotkey64.exe"
+
+      - name: Pack release assets
+        shell: pwsh
+        run: |
+          Copy-Item ".\conf.ini" ".\dist\conf.ini" -Force
+          Compress-Archive -Path ".\dist\*" -DestinationPath ".\haloCaps-master-${{ github.run_number }}.zip" -Force
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: master-${{ github.run_number }}
+          name: master build ${{ github.run_number }}
+          body: |
+            Automated build from master.
+            Commit: ${{ github.sha }}
+          files: |
+            ./dist/haloCaps.exe
+            ./haloCaps-master-${{ github.run_number }}.zip

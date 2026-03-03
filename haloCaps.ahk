@@ -51,6 +51,9 @@ ProcessSetPriority "High"
 global capsLockPressed := ""
 global capsLockPlusUsed := "" ;判断是否使用过capslock plus功能，如果使用过那么就不会执行capslock默认操作
 
+registerRemapHotkeys()
+
+; 支持按住caps键后再按其他键（一次或多次）来触发功能，超时时间为 500ms
 CapsLock:: {
     global
     capsLockPressed := true ;caps键被按下
@@ -84,4 +87,15 @@ f:: {
     runFunc(keymap["caps_" . A_ThisHotkey])
     capsLockPlusUsed := true
 
+}
+
+registerRemapHotkeys() {
+    global remapMap
+    for sourceHotkey, targetSend in remapMap {
+        Hotkey sourceHotkey, sendRemap.Bind(targetSend)
+    }
+}
+
+sendRemap(targetSend, *) {
+    SendInput targetSend
 }

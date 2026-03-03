@@ -1,32 +1,59 @@
 global keymap := Map()
 global globalConfig := Map()
+global remapMap := Map()
 FilePath := "./conf.ini"
 SectionName := "keys"
 globalConfigSectionName := "global"
+remapSectionName := "remap"
 
+configToBool(value, defaultValue := false) {
+    normalized := StrLower(Trim(value))
+    if normalized = "true" || normalized = "1" || normalized = "yes" || normalized = "on" {
+        return true
+    }
+    if normalized = "false" || normalized = "0" || normalized = "no" || normalized = "off" {
+        return false
+    }
+    return defaultValue
+}
+
+readSectionKeys(filePath, sectionName) {
+    try {
+        sectionContent := IniRead(filePath, sectionName)
+        sectionContent := RegExReplace(sectionContent, "m`n)=.*$")
+        return StrSplit(sectionContent, "`n")
+    } catch {
+        return []
+    }
+}
+
+
+;读取全局配置
+For index, keyName in readSectionKeys(FilePath, globalConfigSectionName) {
+    value := IniRead(FilePath, globalConfigSectionName, keyName)
+    globalConfig[keyName] := value
+}
 
 ;读取键值对映射
-settingsKeys := IniRead(FilePath, SectionName)
-settingsKeys := RegExReplace(settingsKeys, "m`n)=.*$")
-For index, keyName in StrSplit(settingsKeys, "`n") {
+For index, keyName in readSectionKeys(FilePath, SectionName) {
     value := IniRead(FilePath, SectionName, keyName)
-    ; MsgBox "The " index " is " keyName " " value
     keymap[keyName] := value
 }
 
-;读取全局配置
-settingsKeys := IniRead(FilePath, globalConfigSectionName)
-settingsKeys := RegExReplace(settingsKeys, "m`n)=.*$")
-For index, keyName in StrSplit(settingsKeys, "`n") {
-    value := IniRead(FilePath, globalConfigSectionName, keyName)
-    MsgBox "The " index " is " keyName " " value
-    globalConfig[keyName] := value
+;读取组合键映射 remap (示例: !c = ^c)
+For index, keyName in readSectionKeys(FilePath, remapSectionName) {
+    value := IniRead(FilePath, remapSectionName, keyName)
+    sourceHotkey := Trim(keyName)
+    targetSend := Trim(value)
+    if sourceHotkey != "" && targetSend != "" {
+        remapMap[sourceHotkey] := targetSend
+    }
 }
 
 
 globalSettins:
     autostartLink := A_StartupCommon . "\haloCaps.lnk"
-    if globalConfig["autostart"] == true {
+    if configToBool(globalConfig["autostart"]) {
         if FileExist(autostartLink) {
             FileGetShortcut(autostartLink, &lnkTarget)
             if lnkTarget != A_ScriptFullPath {
