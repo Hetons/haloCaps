@@ -20,10 +20,13 @@ jobs:
 
       - name: Download AutoHotkey runtime and Ahk2Exe compiler
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           $headers = @{
             Accept = "application/vnd.github+json"
             "User-Agent" = "haloCaps-release-workflow"
+            Authorization = "Bearer $env:GITHUB_TOKEN"
           }
           $ahkRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/AutoHotkey/AutoHotkey/releases/latest" -Headers $headers
           $ahkZip = $ahkRelease.assets | Where-Object { $_.name -match '^AutoHotkey_.*\.zip$' } | Select-Object -First 1
@@ -35,20 +38,20 @@ jobs:
           Expand-Archive -Path "ahk-runtime.zip" -DestinationPath "ahk-runtime" -Force
 
           $ahk2exeRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/AutoHotkey/Ahk2Exe/releases/latest" -Headers $headers
-          $ahk2exeZip = $ahk2exeRelease.assets | Where-Object { $_.name -match '\.zip$' } | Select-Object -First 1
-          if (-not $ahk2exeZip) {
-            throw "No Ahk2Exe zip asset found."
+          $ahk2exeExe = $ahk2exeRelease.assets | Where-Object { $_.name -eq 'Ahk2Exe.exe' } | Select-Object -First 1
+          if (-not $ahk2exeExe) {
+            throw "No Ahk2Exe.exe asset found."
           }
-          Write-Host "Downloading Ahk2Exe asset: $($ahk2exeZip.name)"
-          Invoke-WebRequest -Uri $ahk2exeZip.browser_download_url -OutFile "ahk2exe.zip" -Headers @{ "User-Agent" = "haloCaps-release-workflow" }
-          Expand-Archive -Path "ahk2exe.zip" -DestinationPath "ahk2exe" -Force
+          New-Item -ItemType Directory -Path "ahk2exe" -Force | Out-Null
+          Write-Host "Downloading Ahk2Exe asset: $($ahk2exeExe.name)"
+          Invoke-WebRequest -Uri $ahk2exeExe.browser_download_url -OutFile "ahk2exe\Ahk2Exe.exe" -Headers @{ "User-Agent" = "haloCaps-release-workflow" }
 
           Write-Host "Runtime executables:"
           Get-ChildItem -Path ".\ahk-runtime" -Recurse -Filter "AutoHotkey*.exe" | ForEach-Object { Write-Host $_.FullName }
-          Write-Host "Compiler executables:"
-          Get-ChildItem -Path ".\ahk2exe" -Recurse -Filter "*.exe" | ForEach-Object { Write-Host $_.FullName }
+          Write-Host "Compiler executable:"
+          Write-Host (Resolve-Path ".\ahk2exe\Ahk2Exe.exe").Path
 
-          $compiler = Get-ChildItem -Path ".\ahk2exe" -Recurse -Filter "Ahk2Exe.exe" | Select-Object -First 1
+          $compiler = Get-ChildItem -Path ".\ahk2exe" -Filter "Ahk2Exe.exe" | Select-Object -First 1
           $baseExe = Get-ChildItem -Path ".\ahk-runtime" -Recurse -Filter "AutoHotkey64.exe" | Select-Object -First 1
 
           if (-not $compiler) {
@@ -75,9 +78,22 @@ jobs:
           Write-Host "Compile output: $outFile"
           Write-Host "Compile base: $baseFile"
 
-          $args = @("/in", $inFile, "/out", $outFile, "/base", $baseFile)
-          $proc = Start-Process -FilePath "$env:AHK_COMPILER" -ArgumentList $args -Wait -PassThru
+          # Use /ahk (documented parameter) + /silent to prevent GUI prompt blocking.
+          $args = @("/in", $inFile, "/out", $outFile, "/ahk", $baseFile, "/silent", "verbose")
+          $proc = Start-Process -FilePath "$env:AHK_COMPILER" -ArgumentList $args -PassThru
+          $finished = $proc.WaitForExit(180000)
+          if (-not $finished) {
+            Stop-Process -Id $proc.Id -Force
+            throw "Ahk2Exe timed out after 180s (likely interactive prompt or hang)."
+          }
           Write-Host "Ahk2Exe exit code: $($proc.ExitCode)"
+          if ($proc.ExitCode -ne 0) {
+            Write-Host "dist directory contents:"
+            Get-ChildItem -Path ".\dist" -Force -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+            Write-Host "workspace root contents:"
+            Get-ChildItem -Path "." -Force | ForEach-Object { Write-Host $_.FullName }
+            throw "Ahk2Exe failed with exit code $($proc.ExitCode)."
+          }
 
           if (-not (Test-Path $outFile)) {
             Write-Host "Expected output not found in dist. Searching workspace for haloCaps.exe..."
@@ -108,6 +124,7 @@ jobs:
         with:
           tag_name: master-${{ github.run_number }}
           name: master build ${{ github.run_number }}
+          overwrite_files: true
           body: |
             Automated build from master.
             Commit: ${{ github.sha }}
