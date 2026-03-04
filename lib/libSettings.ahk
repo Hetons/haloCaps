@@ -2,10 +2,11 @@ global keymap := Map()
 global globalConfig := Map()
 global remapMap := Map()
 FilePath := "./conf.ini"
-SectionName := "keys"
+capsLockSectionName := "keys"
 globalConfigSectionName := "global"
 remapSectionName := "remap"
 
+; 判断布尔类型键值
 configToBool(value, defaultValue := false) {
     normalized := StrLower(Trim(value))
     if normalized = "true" || normalized = "1" || normalized = "yes" || normalized = "on" {
@@ -17,6 +18,7 @@ configToBool(value, defaultValue := false) {
     return defaultValue
 }
 
+; 读取配置文件
 readSectionKeys(filePath, sectionName) {
     try {
         sectionContent := IniRead(filePath, sectionName)
@@ -27,33 +29,55 @@ readSectionKeys(filePath, sectionName) {
     }
 }
 
+readSectionToMap(filePath, sectionName, targetMap, trimKey := false, trimValue := false, skipEmptyValue := false) {
+    try {
+        sectionContent := IniRead(filePath, sectionName)
+    } catch {
+        return
+    }
 
-;读取全局配置
-For index, keyName in readSectionKeys(FilePath, globalConfigSectionName) {
-    value := IniRead(FilePath, globalConfigSectionName, keyName)
-    globalConfig[keyName] := value
-}
+    For _, rawLine in StrSplit(sectionContent, "`n", "`r") {
+        line := Trim(rawLine)
+        if line = ""
+            continue
 
-;读取键值对映射
-For index, keyName in readSectionKeys(FilePath, SectionName) {
-    value := IniRead(FilePath, SectionName, keyName)
-    keymap[keyName] := value
-}
+        equalPos := InStr(line, "=")
+        if equalPos <= 0
+            continue
 
-;读取组合键映射 remap (示例: !c = ^c)
-For index, keyName in readSectionKeys(FilePath, remapSectionName) {
-    value := IniRead(FilePath, remapSectionName, keyName)
-    sourceHotkey := Trim(keyName)
-    targetSend := Trim(value)
-    if sourceHotkey != "" && targetSend != "" {
-        remapMap[sourceHotkey] := targetSend
+        keyName := SubStr(line, 1, equalPos - 1)
+        value := SubStr(line, equalPos + 1)
+
+        if trimKey
+            keyName := Trim(keyName)
+        if trimValue
+            value := Trim(value)
+
+        if keyName = ""
+            continue
+        if skipEmptyValue && value = ""
+            continue
+
+        targetMap[keyName] := value
     }
 }
 
 
-globalSettins:
+
+readKeyMapFunction:
+    ;读取全局配置
+    readSectionToMap(FilePath, globalConfigSectionName, globalConfig)
+
+    ;读取键值对映射
+    readSectionToMap(FilePath, capsLockSectionName, keymap)
+
+    ;读取组合键映射 remap (示例: !c = ^c)
+    readSectionToMap(FilePath, remapSectionName, remapMap, true, true, true)
+
+
+globalSettings:
     autostartLink := A_StartupCommon . "\haloCaps.lnk"
-    if configToBool(globalConfig["autostart"]) {
+    if configToBool(globalConfig.Get("autostart", "false")) {
         if FileExist(autostartLink) {
             FileGetShortcut(autostartLink, &lnkTarget)
             if lnkTarget != A_ScriptFullPath {
@@ -63,5 +87,7 @@ globalSettins:
             FileCreateShortcut(A_ScriptFullPath, autostartLink, A_WorkingDir)
         }
     }else{
-        FileDelete autostartLink
+        if FileExist(autostartLink) {
+            FileDelete autostartLink
+        }
     }

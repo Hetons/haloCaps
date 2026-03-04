@@ -1,4 +1,4 @@
-﻿#SingleInstance force
+﻿#SingleInstance Ignore
 
 ;管理员身份重启
 full_command_line := DllCall("GetCommandLine", "str")
@@ -25,6 +25,9 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 #Warn
 SetStoreCapslockMode false
 ProcessSetPriority "High"
+
+checkSingleInstance()
+
 ;--::-------------------------
 ;  KEY_TO_NAME := {"a":"a","b":"b","c":"c","d":"d","e":"e","f":"f","g":"g","h":"h","i":"i"
 ;    ,"j":"j","k":"k","l":"l","m":"m","n":"n","o":"o","p":"p","q":"q","r":"r"
@@ -41,7 +44,6 @@ ProcessSetPriority "High"
 ;  for k,v in KEY_TO_NAME{
 ;      msgbox, % v
 ;  }
-
 
 ;从conf.ini中读取键位对应的功能
 ; LoadKeyMapFromConf()
