@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+  <meta name="description" content="haloCaps - 轻量级 CapsLock 全局热键工具，提升码字编辑效率" />
+  <title>haloCaps ⌨ - CapsLock 全局热键工具</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { 
+      margin: 0; 
+      padding: 0; 
+      width: 100%; 
+      height: 100%; 
+      overflow-x: hidden;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft YaHei", "PingFang SC", sans-serif;
+      background: #0b0f17; 
+      color: #e8eefc;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: max(20px, 5vh) max(20px, 5vw);
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .card { 
+      background: #121a2a; 
+      border: 1px solid #22304d; 
+      border-radius: clamp(12px, 2vw, 20px); 
+      padding: clamp(24px, 4vw, 40px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: clamp(24px, 4vh, 40px);
+    }
+    
+    h1 { 
+      margin: 0 0 clamp(12px, 2vh, 16px);
+      font-size: clamp(32px, 6vw, 52px);
+      font-weight: 700;
+      background: linear-gradient(135deg, #5b9eff 0%, #2a5bd7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+    
+    .subtitle {
+      font-size: clamp(15px, 2.5vw, 18px);
+      line-height: 1.7;
+      color: #e8f2ff;
+      margin: 0;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    
+    code { 
+      background: #0b1222; 
+      padding: 3px 8px; 
+      border-radius: 6px;
+      font-size: 0.9em;
+      font-family: "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: #99b8ff;
+      white-space: nowrap;
+    }
+    
+    .btns { 
+      display: flex; 
+      gap: clamp(10px, 2vw, 14px); 
+      flex-wrap: wrap; 
+      justify-content: center;
+      margin: clamp(24px, 4vh, 32px) 0;
+    }
+    
+    a.btn { 
+      text-decoration: none; 
+      padding: clamp(12px, 2vh, 14px) clamp(18px, 3vw, 24px);
+      border-radius: 12px; 
+      border: 1px solid #2b3b5f; 
+      color: #e8eefc; 
+      background: #17213a;
+      font-size: clamp(14px, 2.2vw, 16px);
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    a.btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(42, 91, 215, 0.3);
+    }
+    
+    a.btn:active {
+      transform: translateY(0);
+    }
+    
+    a.btn.primary { 
+      background: linear-gradient(135deg, #3d78ff 0%, #2a5bd7 100%);
+      border-color: #2a5bd7;
+      box-shadow: 0 4px 16px rgba(42, 91, 215, 0.4);
+    }
+    
+    a.btn.primary:hover {
+      box-shadow: 0 6px 20px rgba(42, 91, 215, 0.6);
+    }
+    
+    .grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+      gap: clamp(12px, 2vw, 18px);
+      margin-top: clamp(24px, 4vh, 32px);
+    }
+    
+    .feature-card {
+      background: #0f1626;
+      border: 1px solid #1a2844;
+      border-radius: clamp(10px, 1.5vw, 14px);
+      padding: clamp(18px, 3vw, 24px);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      border-color: #2a4872;
+    }
+    
+    .feature-card h3 { 
+      margin: 0 0 clamp(10px, 2vh, 14px);
+      font-size: clamp(16px, 2.5vw, 19px);
+      color: #2a5bd7;
+    }
+    
+    ul { 
+      margin: 0;
+      padding-left: clamp(18px, 3vw, 22px);
+      list-style: none;
+    }
+    
+    ul li {
+      position: relative;
+      padding-left: 0;
+      margin-bottom: clamp(8px, 1.5vh, 10px);
+      line-height: 1.6;
+      font-size: clamp(14px, 2vw, 15px);
+      color: #d4e4ff;
+    }
+    
+    ul li:last-child {
+      margin-bottom: 0;
+    }
+    
+    ul li::before {
+      content: "→";
+      position: absolute;
+      left: -18px;
+      color: #5b9eff;
+      font-weight: bold;
+    }
+    
+    .footer { 
+      margin-top: clamp(24px, 4vh, 32px);
+      padding-top: clamp(20px, 3vh, 24px);
+      border-top: 1px solid #1a2844;
+      color: #9eb8dd;
+      font-size: clamp(12px, 1.8vw, 14px);
+      text-align: center;
+      line-height: 1.6;
+    }
+    
+    /* 移动端优化 */
+    @media (max-width: 768px) {
+      body {
+        padding: 20px 16px;
+      }
+      
+      .btns {
+        flex-direction: column;
+      }
+      
+      a.btn {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 20px;
+      }
+      
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* 小屏幕优化 */
+    @media (max-width: 480px) {
+      body {
+        padding: 16px 12px;
+      }
+      
+      code {
+        font-size: 0.85em;
+      }
+    }
+    
+    /* 触摸设备优化 */
+    @media (hover: none) and (pointer: coarse) {
+      a.btn {
+        padding: 16px 24px;
+        min-height: 48px;
+      }
+      
+      a.btn:hover {
+        transform: none;
+      }
+      
+      a.btn:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+      }
+    }
+    
+    /* 浅色模式优化 */
+    @media (prefers-color-scheme: light) {
+      body { background: #f8fafb; color: #1a2844; }
+      .card { background: #ffffff; border-color: #d8e4f2; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08); }
+      .feature-card { background: #f0f5fa; border-color: #d0daea; }
+      .feature-card:hover { border-color: #a8c4e8; box-shadow: 0 8px 24px rgba(42, 91, 215, 0.12); }
+      h1 { color: #1a5cd7; }
+      .subtitle { color: #3a4f6f; }
+      ul li { color: #3a4f6f; }
+      ul li::before { color: #2a5bd7; }
+      code { background: #eff3f9; color: #0d47a1; border: 1px solid #d0daea; }
+      a.btn { background: #f5f8fc; border-color: #c4d8ec; color: #1a2844; }
+      a.btn:hover { background: #eef3fa; border-color: #a8c4e8; }
+      a.btn.primary { 
+        background: linear-gradient(135deg, #2a5bd7 0%, #1a4ab8 100%);
+        border-color: #1a4ab8;
+        color: #ffffff;
+        box-shadow: 0 4px 16px rgba(42, 91, 215, 0.3);
+      }
+      a.btn.primary:hover { box-shadow: 0 6px 20px rgba(42, 91, 215, 0.4); }
+      .footer { border-top-color: #d8e4f2; color: #4a6f99; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1>haloCaps ⌨</h1>
+        <p class="subtitle">
+          让 Windows 像 macOS 一样丝滑 ✨
+         
+        </p>
+        <p> 支持把 <code>CapsLock</code> 和其他键组合，实现光标移动、删除等常用操作，告别手指长距离跨越，大幅提升编辑效率</p>
+      </div>
+
+      <div class="btns">
+        <a class="btn primary" href="https://github.com/Hetons/haloCaps/releases" target="_blank" rel="noopener noreferrer">⬇️ 下载 Releases</a>
+        <a class="btn" href="https://github.com/Hetons/haloCaps" target="_blank" rel="noopener noreferrer">⭐ GitHub 仓库</a>
+        <a class="btn" href="https://github.com/Hetons/haloCaps/blob/master/conf.ini" target="_blank" rel="noopener noreferrer">⚙️ 配置示例</a>
+      </div>
+
+      <div class="grid">
+        <div class="feature-card">
+          <h3>✅ 目前支持的键位</h3>
+          <ul>
+            <li>QWER 组合：<code>Caps+Q/W/E/R</code></li>
+            <li>ASDF 组合：<code>Caps+A/S/D/F</code></li>
+            <li style="font-size: 0.9em; color: #7a96c5; margin-top: 8px;">共 8 个键位，可完全自定义功能</li>
+          </ul>
+        </div>
+        <div class="feature-card">
+          <h3>🎯 核心功能（类 macOS 快捷键）</h3>
+          <ul>
+            <li>↑ 上移光标：<code>keyFunc_moveUp</code></li>
+            <li>↓ 下移光标：<code>keyFunc_moveDown</code></li>
+            <li>← 左移光标：<code>keyFunc_moveLeft</code></li>
+            <li>→ 右移光标：<code>keyFunc_moveRight</code></li>
+            <li>⌫ 删除字符：<code>keyFunc_delete</code></li>
+            <li>↩ 回车确认：<code>keyFunc_enter</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="feature-card">
+          <h3>⚙️ 高级定制</h3>
+          <ul>
+            <li>自定义快捷键映射：<code>[remap]</code></li>
+            <li>例：<code>!c</code> 映射为 <code>^c</code></li>
+            <li>支持 Alt、Ctrl、Shift、Win 组合</li>
+            <li>编辑 <code>conf.ini</code> 即可生效</li>
+          </ul>
+        </div>
+        <div class="feature-card">
+          <h3>🚀 本地快捷键</h3>
+          <ul>
+            <li>按住 Caps 500ms 内单击键位触发</li>
+            <li>支持 Alt+C、Alt+V 等系统快捷键重映</li>
+            <li>轻量级：仅 2.8MB，内存占用极小</li>
+            <li>开机自启：配置 <code>autostart=true</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer">
+        © haloCaps · 让 Windows 丝滑如 macOS · Powered by Nginx
+      </div>
+    </div>
+  </div>
+</body>
+</html>
