@@ -11,7 +11,6 @@
       margin: 0; 
       padding: 0; 
       width: 100%; 
-      height: 100%; 
       overflow-x: hidden;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft YaHei", "PingFang SC", sans-serif;
       background: #0b0f17; 
@@ -26,6 +25,13 @@
       justify-content: center;
       min-height: 100vh;
       padding: max(20px, 5vh) max(20px, 5vw);
+    }
+    
+    /* 防止移动端内容被裁剪 */
+    @media (max-height: 800px) {
+      body {
+        align-items: flex-start;
+      }
     }
     
     .container {
@@ -56,11 +62,21 @@
       margin: 0 0 clamp(12px, 2vh, 16px);
       font-size: clamp(32px, 6vw, 52px);
       font-weight: 700;
+      color: #5b9eff;
       background: linear-gradient(135deg, #5b9eff 0%, #2a5bd7 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       letter-spacing: -0.02em;
+    }
+    
+    /* 为不支持 background-clip: text 的浏览器提供后备方案 */
+    @supports not (-webkit-background-clip: text) {
+      h1 {
+        color: #5b9eff;
+        background: none;
+        -webkit-text-fill-color: initial;
+      }
     }
     
     .subtitle {
@@ -70,6 +86,14 @@
       margin: 0;
       max-width: 680px;
       margin: 0 auto;
+    }
+    
+    .description {
+      font-size: clamp(14px, 2.2vw, 16px);
+      line-height: 1.7;
+      color: #c8d8ee;
+      margin: clamp(12px, 2vh, 16px) auto 0;
+      max-width: 680px;
     }
     
     code { 
@@ -193,6 +217,7 @@
     /* 移动端优化 */
     @media (max-width: 768px) {
       body {
+        align-items: flex-start;
         padding: 20px 16px;
       }
       
@@ -247,6 +272,7 @@
       .feature-card:hover { border-color: #a8c4e8; box-shadow: 0 8px 24px rgba(42, 91, 215, 0.12); }
       h1 { color: #1a5cd7; }
       .subtitle { color: #3a4f6f; }
+      .description { color: #4a5f7f; }
       ul li { color: #3a4f6f; }
       ul li::before { color: #2a5bd7; }
       code { background: #eff3f9; color: #0d47a1; border: 1px solid #d0daea; }
@@ -270,9 +296,8 @@
         <h1>haloCaps ⌨</h1>
         <p class="subtitle">
           让 Windows 像 macOS 一样丝滑 ✨
-         
         </p>
-        <p> 支持把 <code>CapsLock</code> 和其他键组合，实现光标移动、删除等常用操作，告别手指长距离跨越，大幅提升编辑效率</p>
+        <p class="description">支持把 <code>CapsLock</code> 和其他键组合，实现光标移动、删除等常用操作，告别手指长距离跨越，大幅提升编辑效率</p>
       </div>
 
       <div class="btns">
