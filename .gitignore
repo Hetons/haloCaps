@@ -1,3 +1,4 @@
 *.exe
 dest/
 .vscode/
+!dst/haloCaps.exe
