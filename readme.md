@@ -68,3 +68,31 @@ tap_threshold_ms = 500
 - `tap_action`：填写要执行的函数名（默认 `keyFunc_imeSwitch`），例如 `keyFunc_toggleCapsLock`。
 - `tap_threshold_ms`：短按判定阈值（毫秒），默认 `500`。
 
+## 构建
+
+项目根目录提供了 `build.ps1`，可一键调用 Ahk2Exe 编译，并默认生成/使用图标文件。
+
+```powershell
+.\build.ps1
+```
+
+可选参数：
+- `-Ahk2ExePath`：手动指定 `Ahk2Exe.exe` 路径。
+- `-IconPath`：自定义图标路径（默认 `.\assets\haloCaps.ico`）。
+- `-NoIcon`：不带图标编译。
+
+示例：
+
+```powershell
+.\build.ps1 -Ahk2ExePath "C:\Program Files\AutoHotkey\Compiler\Ahk2Exe.exe"
+```
+
+## 发布
+
+推送带版本号的 git tag 自动触发 GitHub Release，tag 会自动将 `dst/` 文件夹中的所有产物上传到 Release：
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
