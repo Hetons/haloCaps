@@ -1,33 +1,12 @@
 global keymap := Map()
 global globalConfig := Map()
 global remapMap := Map()
+global tapAction := "keyFunc_imeSwitch"
+global tapThresholdMs := 500
 FilePath := "./conf.ini"
 capsLockSectionName := "keys"
 globalConfigSectionName := "global"
 remapSectionName := "remap"
-
-; 判断布尔类型键值
-configToBool(value, defaultValue := false) {
-    normalized := StrLower(Trim(value))
-    if normalized = "true" || normalized = "1" || normalized = "yes" || normalized = "on" {
-        return true
-    }
-    if normalized = "false" || normalized = "0" || normalized = "no" || normalized = "off" {
-        return false
-    }
-    return defaultValue
-}
-
-; 读取配置文件
-readSectionKeys(filePath, sectionName) {
-    try {
-        sectionContent := IniRead(filePath, sectionName)
-        sectionContent := RegExReplace(sectionContent, "m`n)=.*$")
-        return StrSplit(sectionContent, "`n")
-    } catch {
-        return []
-    }
-}
 
 readSectionToMap(filePath, sectionName, targetMap, trimKey := false, trimValue := false, skipEmptyValue := false) {
     try {
@@ -62,8 +41,6 @@ readSectionToMap(filePath, sectionName, targetMap, trimKey := false, trimValue :
     }
 }
 
-
-
 readKeyMapFunction:
     ;读取全局配置
     readSectionToMap(FilePath, globalConfigSectionName, globalConfig)
@@ -76,8 +53,9 @@ readKeyMapFunction:
 
 
 globalSettings:
+    ; 根据全局配置设置自动启动
     autostartLink := A_StartupCommon . "\haloCaps.lnk"
-    if configToBool(globalConfig.Get("autostart", "false")) {
+    if parseConfigBool(globalConfig.Get("autostart", "false")) {
         if FileExist(autostartLink) {
             FileGetShortcut(autostartLink, &lnkTarget)
             if lnkTarget != A_ScriptFullPath {
@@ -91,3 +69,14 @@ globalSettings:
             FileDelete autostartLink
         }
     }
+
+    ; 根据全局配置设置 tapAction 和 tapThresholdMs
+    global globalConfig, tapAction, tapThresholdMs
+    rawAction := Trim(globalConfig.Get("tap_action", "keyFunc_imeSwitch"))
+    if (rawAction != "") {
+        tapAction := rawAction
+    } else {
+        tapAction := "keyFunc_imeSwitch"
+    }
+
+    tapThresholdMs := parseConfigInt(globalConfig.Get("tap_threshold_ms", "500"), 500, 50)

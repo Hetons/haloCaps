@@ -7,6 +7,8 @@
 
 是一款轻量级全局热键设置软件，主要功能是通过将**不太常用**但是**地理位置绝佳**的`CapsLock`与**其他键**组合，来达到不同的功能。例如移动光标、删除等基本操作，大大增加码字效率，缩短手指移动距离！
 
+现在也支持将`CapsLock`短按用于输入法内部中英文状态切换（可配置），并保持原有组合导航能力。
+
 
 ## 使用指南
 1. 下载[Releases](https://github.com/TanYongF/haloCaps/releases)最新版本，解压到任意路径
@@ -52,4 +54,17 @@ autostart = true/false
 - 左侧和右侧都使用 AHK 组合键语法，统一书写
 - 常用修饰符：`!`(Alt), `^`(Ctrl), `+`(Shift), `#`(Win)
 - 例如：`!c = ^c` 表示 `Alt+C` 映射为 `Ctrl+C`
+
+### 3. Caps 轻按动作与输入法内部状态切换
+你可以在`conf.ini`的`[global]`段中配置：
+
+```ini
+[global]
+tap_action = keyFunc_imeSwitch
+tap_threshold_ms = 500
+```
+
+说明：
+- `tap_action`：填写要执行的函数名（默认 `keyFunc_imeSwitch`），例如 `keyFunc_toggleCapsLock`。
+- `tap_threshold_ms`：短按判定阈值（毫秒），默认 `500`。
 

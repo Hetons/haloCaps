@@ -19,7 +19,6 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 #Include "lib"
 #Include libKeyFunctions.ahk
 #Include libFunctions.ahk
-#Include libKeyMap.ahk
 #Include libSettings.ahk
 
 #Warn
@@ -60,13 +59,13 @@ CapsLock:: {
     global
     capsLockPressed := true ;caps键被按下
     capsLockPlusUsed := false
-    SetTimer(setCapsLockPlusUsed, -500) ;如果按下caps键500ms还未松开，默认此次操作为空操作
+    SetTimer(setCapsLockPlusUsed, -tapThresholdMs) ;如果按下caps键超时还未松开，默认此次操作为空操作
 
     KeyWait "CapsLock" ;阻塞等待Caps被按下或者松开
 
     capsLockPressed := false ;关闭capslock功能
     if !capsLockPlusUsed {
-        keyFunc_toggleCapsLock()
+        runTapAction()
     }
     capsLockPlusUsed := true
     setCapsLockPlusUsed() {
@@ -100,4 +99,19 @@ registerRemapHotkeys() {
 
 sendRemap(targetSend, *) {
     SendInput targetSend
+}
+
+runTapAction() {
+    global tapAction
+    actionName := Trim(tapAction)
+    if (actionName = "") {
+        keyFunc_toggleCapsLock()
+        return
+    }
+
+    try {
+        %actionName%()
+    } catch {
+        keyFunc_toggleCapsLock()
+    }
 }

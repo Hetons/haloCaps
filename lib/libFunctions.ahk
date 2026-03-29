@@ -10,6 +10,33 @@ runFunc(str){
     }
 }
 
+parseConfigBool(value, defaultValue := false) {
+    normalized := StrLower(Trim(value))
+    if normalized = "true" || normalized = "1" || normalized = "yes" || normalized = "on" {
+        return true
+    }
+    if normalized = "false" || normalized = "0" || normalized = "no" || normalized = "off" {
+        return false
+    }
+    return defaultValue
+}
+
+parseConfigInt(rawValue, defaultValue, minValue := "", maxValue := "") {
+    value := Trim(rawValue)
+    if !RegExMatch(value, "^\d+$") {
+        return defaultValue
+    }
+
+    parsed := value + 0
+    if (minValue != "" && parsed < minValue) {
+        return minValue
+    }
+    if (maxValue != "" && parsed > maxValue) {
+        return maxValue
+    }
+    return parsed
+}
+
 
 ;检查单例程序，如果已有其他实例运行则退出
 checkSingleInstance() {

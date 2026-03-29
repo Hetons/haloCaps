@@ -26,3 +26,9 @@ keyFunc_enter(){
 keyFunc_toggleCapsLock(){
     SetCapsLockState GetKeyState("CapsLock","T") ? "Off" : "On"
 }
+
+keyFunc_imeSwitch() {
+    ; Toggle CN/EN mode inside current IME by sending Shift tap.
+    SendInput "{LShift down}{LShift up}"
+    return true
+}
