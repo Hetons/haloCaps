@@ -17,11 +17,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Extract version and create package
+        run: |
+          VERSION=${GITHUB_REF##*/}
+          PKG_NAME="haloCaps-${VERSION}"
+          mkdir -p "$PKG_NAME"
+          
+          # Copy files to package
+          cp dst/haloCaps.exe "$PKG_NAME/"
+          cp conf.ini "$PKG_NAME/"
+          cp readme.md "$PKG_NAME/"
+          cp LICENSE "$PKG_NAME/"
+          
+          # Create zip archive
+          zip -r "${PKG_NAME}.zip" "$PKG_NAME"
+          ls -lh "${PKG_NAME}.zip"
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dst/*
+          files: haloCaps-v*.zip
           draft: false
           prerelease: false
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
