@@ -51,6 +51,7 @@ checkSingleInstance()
 ;-------------------core function start------------------------
 global capsLockPressed := ""
 global capsLockPlusUsed := "" ;判断是否使用过capslock plus功能，如果使用过那么就不会执行capslock默认操作
+global capsLockLongPressed := "" ;判断是否长按capslock
 
 registerRemapHotkeys()
 
@@ -59,19 +60,21 @@ CapsLock:: {
     global
     capsLockPressed := true ;caps键被按下
     capsLockPlusUsed := false
-    SetTimer(setCapsLockPlusUsed, -tapThresholdMs) ;如果按下caps键超时还未松开，默认此次操作为空操作
-
-    KeyWait "CapsLock" ;阻塞等待Caps被按下或者松开
+    capsLockLongPressed := false
+    ; 在阈值内松开视为短按，超时则视为长按并取消短按动作
+    releasedWithinThreshold := KeyWait("CapsLock", "T" . (tapThresholdMs / 1000))
+    if !releasedWithinThreshold {
+        capsLockLongPressed := true
+        KeyWait "CapsLock"
+    }
 
     capsLockPressed := false ;关闭capslock功能
-    if !capsLockPlusUsed {
+    if (capsLockLongPressed && !capsLockPlusUsed) {
+        keyFunc_toggleCapsLock()
+    } else if !capsLockPlusUsed {
         runTapAction()
     }
     capsLockPlusUsed := true
-    setCapsLockPlusUsed() {
-        global
-        capsLockPlusUsed := true
-    }
 }
 
 ; bind hotkey to functions
